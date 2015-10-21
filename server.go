@@ -47,14 +47,13 @@ func postData(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func main() {
 	//server code start
 	r := httprouter.New()
+
 	r.POST("/keyvals",postData)
 	fmt.Println("Server Started ...")
-    	 server := http.Server{
 
-            Addr:        "0.0.0.0:3030",
-
-            Handler: r,
-
+    server := http.Server{
+        Addr:        "0.0.0.0:3030",
+        Handler: r,
     }
 
     server.ListenAndServe()

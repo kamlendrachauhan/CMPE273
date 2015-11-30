@@ -19,6 +19,9 @@ func postData(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
     // Stub an user to be populated from the body
     var d data
 
+ // Populate the user data
+    json.NewDecoder(r.Body).Decode(&d)
+
     //First put data into the main db then once successful put it in Cache
     for key,val := range d{
         putError := postDataToServer(key, val, redis_main_db)
@@ -29,7 +32,7 @@ func postData(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
     }
 
     // Populate the user data
-    json.NewDecoder(r.Body).Decode(&d)
+//    json.NewDecoder(r.Body).Decode(&d)
 
     client := redis.NewClient(&redis.Options{
         Addr:     "localhost:6379",
@@ -132,8 +135,9 @@ func postDataToServer(key string,val string, serverIpAndPort string) (er error){
     err1 := client.Set(key, val, 0).Err()
     if err1 != nil {
         panic(err1)
-    }
-
+    }else {
+	fmt.Println("Key has been added to main server",key)
+	}
     return err
 }
 func main() {

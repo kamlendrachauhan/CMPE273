@@ -10,6 +10,7 @@ import (
 const (
     redis_cache_one = "54.175.28.88:6379"
     redis_main_db = "52.91.39.197:6379"
+    redis_localhost = "localhost:6379"
 )
 
 type data map[string]string
@@ -17,6 +18,15 @@ type data map[string]string
 func postData(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
     // Stub an user to be populated from the body
     var d data
+
+    //First put data into the main db then once successful put it in Cache
+    for key,val := range d{
+        putError := postDataToServer(key, val, redis_main_db)
+        if putError != nil{
+            panic(putError)
+            return
+        }
+    }
 
     // Populate the user data
     json.NewDecoder(r.Body).Decode(&d)
@@ -69,8 +79,8 @@ func getData(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
             fmt.Println("key does not exists in main db as well")
         }
         //update the cache
-        postDataToServer(key, value)
-	val = value
+        postDataToServer(key, value,redis_localhost)
+        val = value
     } else if err != nil {
         panic(err)
     } else {
@@ -107,10 +117,10 @@ func getFromMainDatabase(missingKey string) (value string, errr error){
     return val,err
 }
 
-func postDataToServer(key string,val string) (er error){
+func postDataToServer(key string,val string, serverIpAndPort string) (er error){
 
     client := redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
+        Addr:     serverIpAndPort,
         Password: "", // no password set
         DB:       0,  // use default DB
     })
@@ -119,10 +129,10 @@ func postDataToServer(key string,val string) (er error){
         panic(err)
     }
 
-        err1 := client.Set(key, val, 0).Err()
-        if err1 != nil {
-            panic(err1)
-        }
+    err1 := client.Set(key, val, 0).Err()
+    if err1 != nil {
+        panic(err1)
+    }
 
     return err
 }
@@ -143,4 +153,3 @@ func main() {
     server.ListenAndServe()
     //server code ends here
 }
-

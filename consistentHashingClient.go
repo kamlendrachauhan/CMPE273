@@ -11,6 +11,9 @@ import (
 	"io/ioutil"
 	"bytes"
 	"github.com/julienschmidt/httprouter"
+	"image"
+	"image/jpeg"
+	"io"
 
 )
 
@@ -18,6 +21,8 @@ type HashKey uint32
 type HashKeyOrder []HashKey
 
 var ring *HashRing
+
+var nodesList []string 
 
 func (h HashKeyOrder) Len() int           { return len(h) }
 func (h HashKeyOrder) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
@@ -37,6 +42,8 @@ func New(nodes []string) *HashRing {
 		nodes:      nodes,
 		weights:    make(map[string]int),
 	}
+	//adding to the nodeList array
+	nodesList=nodes
 	hashRing.generateCircle()
 	return hashRing
 }
@@ -188,6 +195,9 @@ func (h *HashRing) AddWeightedNode(node string, weight int) *HashRing {
 		weights:    weights,
 	}
 	hashRing.generateCircle()
+	//Adding the node to our nodesList
+	nodesList = append(nodesList, node)
+
 	return hashRing
 }
 
@@ -213,6 +223,17 @@ func (h *HashRing) RemoveNode(node string) *HashRing {
 		weights:    weights,
 	}
 	hashRing.generateCircle()
+	//delete from nodeList
+	//get index
+	var found bool
+	var index int
+	for i:= range nodesList{
+		if nodesList[i]==node{
+			index=i
+			found=true
+		}
+	}
+	if found {nodesList = append(nodesList[:index],nodesList[index+1:]...)}
 	return hashRing
 }
 
@@ -242,9 +263,19 @@ func putkey(x Response)error{
 
    //making a map
    m:=make(map[string]string)
+
+   //Converting 
+
+   /*
+    buffer := new(bytes.Buffer)
+	w.Header().Set("Content-Type", "image/jpeg")
+    w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+   */
+
    m[x.Key]=x.Value
 
    jsonString,_:=json.Marshal(m)
+   fmt.Println("inside Put: marshalling")
    fmt.Println(string(jsonString))
 
    req1, errReqC := http.NewRequest("POST", url, bytes.NewBuffer(jsonString))
@@ -278,6 +309,54 @@ func putkey(x Response)error{
 
    return nil
 }
+
+/*func putkey_Working(x Response)error{
+   var url string
+   //ring := New(servers)
+   server1,z := ring.GetNode(x.Key)
+   if(z==true){
+       url =server1+"/"+"keyvals" }
+   fmt.Println(url)
+
+   //making a map
+   m:=make(map[string]string)
+
+
+
+   m[x.Key]=x.Value
+
+   jsonString,_:=json.Marshal(m)
+   fmt.Println("inside Put: marshalling")
+   fmt.Println(string(jsonString))
+
+   req1, errReqC := http.NewRequest("POST", url, bytes.NewBuffer(jsonString))
+		if errReqC!=nil{
+			errMsg:="Request creation error"
+			fmt.Println(errMsg)
+         //errorCheck(errMsg,rw)
+			return errors.New(errMsg)
+		}
+
+		client := &http.Client{}
+		resp, errClient := client.Do(req1)
+		if errClient != nil {
+			fmt.Println(resp)
+			fmt.Println(errClient.Error())
+			errMsg:="Request creation error.Check server side."
+			fmt.Println(errMsg)
+        //errorCheck(errMsg,rw)
+			return errors.New(errMsg)
+		}
+		defer resp.Body.Close()
+
+		fmt.Println("The response is: ")
+            fmt.Println(resp)
+
+
+
+
+   return nil
+}*/
 
 func getkey(x string)(Response,bool,error){
    var url string
@@ -358,8 +437,7 @@ func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params)
 
 	//The input will be a string - node link
 	var urls []NodeUrl
-
-
+/*
 	len1 := len(ring.sortedKeys)
 
 	for i:=0;i<len1;i++{
@@ -367,16 +445,17 @@ func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params)
 		fmt.Println(urlStr,i,ring.sortedKeys[i])
 		temp:=NodeUrl{string(urlStr)}
 		urls=append(urls,temp)
-	}
-
-	/*for url := range ring.nodes {
-		urlStr:=ring.ring[ring.sortedKeys[url]]
-		fmt.Println(urlStr,url,ring.sortedKeys[url])
-		temp:=NodeUrl{string(urlStr)}
-		urls=append(urls,temp)
 	}*/
 
-	/*return h.ring[h.sortedKeys[pos]], true*/
+
+	//New getAllNode code
+	len1 := len(nodesList)
+	for i:=0;i<len1;i++{
+		temp:=NodeUrl{nodesList[i]}
+		fmt.Println(temp)
+		urls=append(urls,temp)
+	}
+
 	//Create 
 	allNodes:=AllNodes{urls}
 
@@ -478,16 +557,71 @@ func getKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params)
 		
 }
 
+type imagePost struct {
+	Value string `json:"value"`
+}
+
+
+
+func postImage(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+	fmt.Println("inside post")
+	//obj:=imagePost{}
+	bodyResp:= io.Reader(req.Body)
+      /* if err1 != nil {
+       	fmt.Println("err: readall")
+           panic(err1)
+       }*/
+	 //fmt.Println(string(bodyResp))
+
+      //Decode
+      m, format, err1 := image.Decode(bodyResp)
+      if err1!=nil{
+      	panic(err1)
+      }
+   	 fmt.Println(format)
+    //var img image.Image = m
+
+    //code starts here
+    buf := new(bytes.Buffer)
+    err2 := jpeg.Encode(buf, m, nil)
+
+    fmt.Println(err2)
+    send_s3 := buf.Bytes()
+
+    fmt.Println(string(send_s3)) 
+
+
+
+
+	 /*err := json.Unmarshal(bodyResp, &obj)
+       if err != nil {
+       		fmt.Println("err: unmarshall")
+           panic(err)
+       }*/
+
+
+//fmt.Println("obj.value",obj.Value)
+
+	 //respStruct:=Response{"123",string(bodyResp)}
+       respStruct:=Response{"77",string(send_s3)}
+	 putkey(respStruct)
+
+
+}
+
+
 
 func main(){
 
 	fmt.Println("=========================")
 
-
-
 	//Initially creating a empty ring
 	memcacheServers := []string{}
-	memcacheServers = []string{"http://54.175.28.88:3031",
+	/* memcacheServers = []string{"http://localhost:3031",
+                           "http://localhost:3031",
+                           "http://localhost:3031"}*/
+
+                            memcacheServers = []string{"http://54.175.28.88:3030",
                            "http://52.91.171.117:3030",
                            "http://54.84.66.145:3030"}
    	ring = New(memcacheServers)
@@ -500,6 +634,7 @@ func main(){
 	mux.PUT("/nodes/:node_ip", addNodeReq)
 	mux.GET("/nodes", getAllNodes)
 	mux.DELETE("/nodes/:node_ip", deleteNodeReq)
+	mux.POST("/images",postImage)
 
 	//key-vlaue related rest end points
 	mux.PUT("/keys", setKeyValue)
@@ -515,15 +650,20 @@ func main(){
 
 
 
+
 func  main_old() {
 	fmt.Println("inside main")
 	/*memcacheServers := []string{"http://localhost:3000",
                            "http://localhost:3001",
                            "http://localhost:3002"}*/
 
-    memcacheServers := []string{"http://54.175.28.88:3030",
+    /*memcacheServers := []string{"http://54.175.28.88:3030",
                            "http://52.91.171.117:3030",
-                           "http://54.84.66.145:3030"}
+                           "http://54.84.66.145:3030"}*/
+
+                           memcacheServers := []string{"http://localhost:3004",
+                           "http://localhost:3004",
+                           "http://localhost:3004"}
 
 
    ring = New(memcacheServers)

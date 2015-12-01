@@ -8,7 +8,6 @@ import (
     "encoding/json"
 )
 const (
-    redis_cache_one = "54.175.28.88:6379"
     redis_main_db = "52.91.39.197:6379"
     redis_localhost = "localhost:6379"
 )

@@ -10,6 +10,7 @@ import (
 const (
     redis_cache_one = "54.175.28.88:6379"
     redis_main_db = "52.91.39.197:6379"
+    redis_localhost = "localhost:6379"
 )
 
 type data map[string]string
@@ -17,6 +18,15 @@ type data map[string]string
 func postData(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
     // Stub an user to be populated from the body
     var d data
+
+    //First put data into the main db then once successful put it in Cache
+    for key,val := range d{
+        putError := postDataToServer(key, val, redis_main_db)
+        if putError != nil{
+            panic(putError)
+            return
+        }
+    }
 
     // Populate the user data
     json.NewDecoder(r.Body).Decode(&d)
@@ -60,7 +70,7 @@ func getData(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
     val, err := client.Get(key).Result()
     if err == redis.Nil {
-        fmt.Println("key does not exists")
+        fmt.Println("key does not exists in cache")
 
         //Get the values from the main database
         value, err := getFromMainDatabase(key)
@@ -69,19 +79,20 @@ func getData(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
             fmt.Println("key does not exists in main db as well")
         }
         //update the cache
-        postDataToServer(key, value)
-	val = value
-	rw.Header().Set("System-Type", "MainDB")
+        postDataToServer(key, value,redis_localhost)
+        val = value
+        rw.Header().Set("System-Type", "MainDB")
 
     } else if err != nil {
         panic(err)
     } else {
-//        fmt.Println("key ", val)
+        //fmt.Println("key ", val)
+        fmt.Println("key exists in cache")
+        rw.Header().Set("System-Type", "Cache")
     }
     uj, _ := json.Marshal(val)
 
     // Write content-type, statuscode, payload
-    rw.Header().Set("System-Type", "Cache")
     rw.Header().Set("Content-Type", "application/json")
     rw.WriteHeader(200)
     fmt.Fprintf(rw, "%s", uj)
@@ -105,15 +116,15 @@ func getFromMainDatabase(missingKey string) (value string, errr error){
     } else if err != nil {
         panic(err)
     } else {
-//        fmt.Println("key ", val)
+        //fmt.Println("key ", val)
     }
     return val,err
 }
 
-func postDataToServer(key string,val string) (er error){
+func postDataToServer(key string,val string, serverIpAndPort string) (er error){
 
     client := redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
+        Addr:     serverIpAndPort,
         Password: "", // no password set
         DB:       0,  // use default DB
     })
@@ -122,10 +133,10 @@ func postDataToServer(key string,val string) (er error){
         panic(err)
     }
 
-        err1 := client.Set(key, val, 0).Err()
-        if err1 != nil {
-            panic(err1)
-        }
+    err1 := client.Set(key, val, 0).Err()
+    if err1 != nil {
+        panic(err1)
+    }
 
     return err
 }

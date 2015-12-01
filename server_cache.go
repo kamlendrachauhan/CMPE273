@@ -71,14 +71,17 @@ func getData(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
         //update the cache
         postDataToServer(key, value)
 	val = value
+	rw.Header().Set("System-Type", "MainDB")
+
     } else if err != nil {
         panic(err)
     } else {
-        fmt.Println("key ", val)
+//        fmt.Println("key ", val)
     }
     uj, _ := json.Marshal(val)
 
     // Write content-type, statuscode, payload
+    rw.Header().Set("System-Type", "Cache")
     rw.Header().Set("Content-Type", "application/json")
     rw.WriteHeader(200)
     fmt.Fprintf(rw, "%s", uj)
@@ -102,7 +105,7 @@ func getFromMainDatabase(missingKey string) (value string, errr error){
     } else if err != nil {
         panic(err)
     } else {
-        fmt.Println("key ", val)
+//        fmt.Println("key ", val)
     }
     return val,err
 }

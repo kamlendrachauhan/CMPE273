@@ -1,20 +1,19 @@
 package main
 
 import (
-	"crypto/md5"
-	"fmt"
-	"math"
-	"sort"
-	"net/http"
-	"errors"
-	"encoding/json"
-	"io/ioutil"
-	"bytes"
-	"github.com/julienschmidt/httprouter"
-	"image"
-	"image/jpeg"
-	"io"
-
+"crypto/md5"
+"fmt"
+"math"
+"sort"
+"net/http"
+"errors"
+"encoding/json"
+"io/ioutil"
+"bytes"
+"github.com/julienschmidt/httprouter"
+"time"
+"os"
+"strconv"
 )
 
 type HashKey uint32
@@ -23,6 +22,7 @@ type HashKeyOrder []HashKey
 var ring *HashRing
 
 var nodesList []string 
+var LOG_FILE_NAME="dat.log"
 
 func (h HashKeyOrder) Len() int           { return len(h) }
 func (h HashKeyOrder) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
@@ -125,6 +125,23 @@ func (h *HashRing) GetNodePos(stringKey string) (pos int, ok bool) {
 	}
 }
 
+func writeToAFile(text string){
+
+	f, err2 := os.OpenFile(LOG_FILE_NAME, os.O_APPEND, 0666)
+	if err2!=nil{
+		fmt.Printf(err2.Error())
+	}
+	defer f.Close()
+
+
+    //n3, err := f.WriteString("writes\n")
+	n3, err := f.WriteString(text+"\n")
+	if err!=nil{
+		fmt.Printf(err.Error())
+	}
+	//fmt.Printf("wrote %d bytes\n", n3)
+	f.Sync()
+}
 
 
 
@@ -254,31 +271,28 @@ func hashDigest(key string) []byte {
 
 //------
 func putkey(x Response)error{
-   var url string
+	var url string
    //ring := New(servers)
-   server1,z := ring.GetNode(x.Key)
-   if(z==true){
-       url =server1+"/"+"keyvals" }
-   fmt.Println(url)
+	server1,z := ring.GetNode(x.Key)
+	if(z==true){
+		url =server1+"/"+"keyvals" }
+		fmt.Println(url)
 
    //making a map
-   m:=make(map[string]string)
+		m:=make(map[string]string)
 
    //Converting 
 
-   /*
-    buffer := new(bytes.Buffer)
-	w.Header().Set("Content-Type", "image/jpeg")
-    w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-   */
+		//fmt.Println("Body:",x.Key,x.Value)
 
-   m[x.Key]=x.Value
 
-   jsonString,_:=json.Marshal(m)
-   fmt.Println("inside Put: marshalling")
-   fmt.Println(string(jsonString))
+		m[x.Key]=x.Value
 
-   req1, errReqC := http.NewRequest("POST", url, bytes.NewBuffer(jsonString))
+		jsonString,_:=json.Marshal(m)
+   //fmt.Println("inside Put: marshalling")
+   //fmt.Println(string(jsonString))
+
+		req1, errReqC := http.NewRequest("POST", url, bytes.NewBuffer(jsonString))
 		if errReqC!=nil{
 			errMsg:="Request creation error"
 			fmt.Println(errMsg)
@@ -299,360 +313,270 @@ func putkey(x Response)error{
 		defer resp.Body.Close()
 
 		fmt.Println("The response is: ")
-            fmt.Println(resp)
+        //fmt.Println(resp)
 
 
 
  /*  // any status code 200..299 is "success", so fail on anything else
    if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-       return errors.New(http.StatusText(resp.StatusCode))*/
+   	return errors.New(http.StatusText(resp.StatusCode))*/
 
-   return nil
-}
-
-/*func putkey_Working(x Response)error{
-   var url string
-   //ring := New(servers)
-   server1,z := ring.GetNode(x.Key)
-   if(z==true){
-       url =server1+"/"+"keyvals" }
-   fmt.Println(url)
-
-   //making a map
-   m:=make(map[string]string)
-
-
-
-   m[x.Key]=x.Value
-
-   jsonString,_:=json.Marshal(m)
-   fmt.Println("inside Put: marshalling")
-   fmt.Println(string(jsonString))
-
-   req1, errReqC := http.NewRequest("POST", url, bytes.NewBuffer(jsonString))
-		if errReqC!=nil{
-			errMsg:="Request creation error"
-			fmt.Println(errMsg)
-         //errorCheck(errMsg,rw)
-			return errors.New(errMsg)
-		}
-
-		client := &http.Client{}
-		resp, errClient := client.Do(req1)
-		if errClient != nil {
-			fmt.Println(resp)
-			fmt.Println(errClient.Error())
-			errMsg:="Request creation error.Check server side."
-			fmt.Println(errMsg)
-        //errorCheck(errMsg,rw)
-			return errors.New(errMsg)
-		}
-		defer resp.Body.Close()
-
-		fmt.Println("The response is: ")
-            fmt.Println(resp)
-
-
-
-
-   return nil
-}*/
-
-func getkey(x string)(Response,bool,error){
-   var url string
-   server1,z := ring.GetNode(x)
-   if(z==true){
-       url =server1+"/"+"keyvals"+"/"+x
-   }
-   fmt.Println(url)
-   resp, err := http.Get(url)
-   if err != nil || resp.StatusCode >= 400 {
-       return Response{}, false, err
+   	return nil
    }
 
-   fmt.Println("Response:",resp)
 
-   defer resp.Body.Close()
+   func getkey(x string)(Response,bool,error){
+   	fmt.Println("inside getkey")
+   	var url string
+   	server1,z := ring.GetNode(x)
+   	if(z==true){
+   		url =server1+"/"+"keyvals"+"/"+x
+   	}
+   	fmt.Println(url)
+   	resp, err := http.Get(url)
+   	if err != nil || resp.StatusCode >= 400 {
+   		return Response{}, false, err
+   	}
 
-   body, err := ioutil.ReadAll(resp.Body)
-   if err != nil {
+   //fmt.Println("Response:",resp)
+
+   	defer resp.Body.Close()
+
+   	body, err := ioutil.ReadAll(resp.Body)
+   	if err != nil {
        //return Response{}, false, err
-   }
-   fmt.Println(string(body))
-   //For now a string is being sent
-   valueString:=string(body)
+   	}
+   //fmt.Println(string(body))
 
-  /* u:=Response{}
-   err = json.Unmarshal(body, &u)
-   if err != nil {
-       return Response{}, false, err
-   }*/
+
+   //For now a string is being sent
+   	valueString:=string(body)
 
    //fmt.Println("value:",u.Value)
-   fmt.Println("value:",valueString)
-   u:=Response{x,valueString}
-   return u, true, nil
-}
+   //fmt.Println("value:",valueString)
+   	u:=Response{x,valueString}
+   	return u, true, nil
+   }
 
-type Response struct{
-   Key string `json:"key"`
-   Value string `json:"value"`
-}
+   type Response struct{
+   	Key string `json:"key"`
+   	Value string `json:"value"`
+   }
 
-type AllNodes struct
-{
-	Values []NodeUrl `json:"value"`
-}
+   type AllNodes struct
+   {
+   	Values []NodeUrl `json:"value"`
+   }
 
 
-type NodeUrl struct
-{
-	Url string `json:"url"`
-}
+   type NodeUrl struct
+   {
+   	Url string `json:"url"`
+   }
 
-type GetRequest struct
-{
-	Key string `json:"key"`
-}
+   type GetRequest struct
+   {
+   	Key string `json:"key"`
+   }
 
 
 
 //Add an node into the system
-func addNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
-	
-	fmt.Println("inside add node")
-	//The input will be a string - node link
-	nodeString:=p.ByName("node_ip")
-	fmt.Println("the obtained node ip address: ", nodeString)
-	httpnode:="http://"+ nodeString
+   func addNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
-	ring = ring.AddNode(httpnode) 
-	rw.WriteHeader(http.StatusCreated)
-}
+   	fmt.Println("inside add node")
+	//The input will be a string - node link
+   	nodeString:=p.ByName("node_ip")
+   	fmt.Println("the obtained node ip address: ", nodeString)
+   	httpnode:="http://"+ nodeString
+
+   	ring = ring.AddNode(httpnode) 
+   	rw.WriteHeader(http.StatusCreated)
+   }
 
 
 
 //Get all the nodes --->Not working
-func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+   func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
 	//The input will be a string - node link
-	var urls []NodeUrl
-/*
-	len1 := len(ring.sortedKeys)
-
-	for i:=0;i<len1;i++{
-		urlStr:=ring.ring[ring.sortedKeys[i]]
-		fmt.Println(urlStr,i,ring.sortedKeys[i])
-		temp:=NodeUrl{string(urlStr)}
-		urls=append(urls,temp)
-	}*/
+   	var urls []NodeUrl
 
 
 	//New getAllNode code
-	len1 := len(nodesList)
-	for i:=0;i<len1;i++{
-		temp:=NodeUrl{nodesList[i]}
-		fmt.Println(temp)
-		urls=append(urls,temp)
-	}
+   	len1 := len(nodesList)
+   	for i:=0;i<len1;i++{
+   		temp:=NodeUrl{nodesList[i]}
+   		fmt.Println(temp)
+   		urls=append(urls,temp)
+   	}
 
 	//Create 
-	allNodes:=AllNodes{urls}
+   	allNodes:=AllNodes{urls}
 
 	//marshalling into a json
-	respJson, err := json.Marshal(allNodes)
-	if err!=nil{
-		fmt.Print("Error occcured in marshalling")
-	}
+   	respJson, err := json.Marshal(allNodes)
+   	if err!=nil{
+   		fmt.Print("Error occcured in marshalling")
+   	}
 
-	rw.Header().Set("Content-Type","application/json")
-	rw.WriteHeader(http.StatusOK)
-	fmt.Fprintf(rw, "%s", respJson)
+   	rw.Header().Set("Content-Type","application/json")
+   	rw.WriteHeader(http.StatusOK)
+   	fmt.Fprintf(rw, "%s", respJson)
 
-}
+   }
 
 
 //Delete a node from the ring
-func deleteNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+   func deleteNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
 	//The input will be a string - node link
-	nodeString:=p.ByName("node_ip")
-	fmt.Println("The obtained node to be deleted: ", nodeString)
-	httpnode:="http://"+ nodeString
+   	nodeString:=p.ByName("node_ip")
+   	fmt.Println("The obtained node to be deleted: ", nodeString)
+   	httpnode:="http://"+ nodeString
 
-	ring = ring.RemoveNode(httpnode) 
-	rw.WriteHeader(http.StatusCreated)
-}
+   	ring = ring.RemoveNode(httpnode) 
+	//Printing the nodes after the delete
+   	fmt.Println("Printing the nodes after the delete")
+   	for i := range ring.nodes {
+   		fmt.Println(i)
+   	}
+
+   	rw.WriteHeader(http.StatusCreated)
+   }
 
 
 
 //Set a key value pair
-func setKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+   func setKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
 	//The input will be a json (ince if wwe pass http etc. will be an error)
 
-	   jsonInp:=Response{}
+   	jsonInp:=Response{}
 
     //decode the sent json
-            errDecode:=json.NewDecoder(req.Body).Decode(&jsonInp)
-            if errDecode!=nil{
-                fmt.Println(errDecode.Error())
-                rw.WriteHeader(http.StatusBadRequest)
+   	errDecode:=json.NewDecoder(req.Body).Decode(&jsonInp)
+   	if errDecode!=nil{
+   		fmt.Println(errDecode.Error())
+   		rw.WriteHeader(http.StatusBadRequest)
                 //msg:="Json sent was Empty/Incorrect .Error: "
                 //errorCheck(msg,rw)
-            }
+   	}
 
 
       //calling the put key
-      errorPut:=putkey(jsonInp)
+   	errorPut:=putkey(jsonInp)
 
-      	if errorPut!=nil{
-      		rw.WriteHeader(http.StatusNotFound)}else{
-      			rw.WriteHeader(http.StatusCreated)
-      		}
-		
-}
+   	if errorPut!=nil{
+   		rw.WriteHeader(http.StatusNotFound)}else{
+   			rw.WriteHeader(http.StatusOK)
+   		}
+
+   	}
 
 
 
 
 ///get a key value pair
-func getKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+   	func getKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
-	//The input will be a json (ince if wwe pass http etc. will be an error)
+            //Time of req
+   		t1:=time.Now()
+   		//fmt.Println(t1)
 
-	/*   jsonInp:=GetRequest{}
-
-    //decode the sent json
-            errDecode:=json.NewDecoder(req.Body).Decode(&jsonInp)
-            if errDecode!=nil{
-                fmt.Println(errDecode.Error())
-                rw.WriteHeader(http.StatusBadRequest)
-                //msg:="Json sent was Empty/Incorrect .Error: "
-                //errorCheck(msg,rw)
-            }
-*/
-
-      keyString:=p.ByName("key_id")
+   		keyString:=p.ByName("key_id")
+   		fmt.Println("Key given:",keyString)
 
       //calling the put key
       //resp,_,errorGet:=getkey(jsonInp.Key)
-      resp,_,errorGet:=getkey(keyString)
+   		resp,_,errorGet:=getkey(keyString)
 
-      	if errorGet!=nil{
-      		rw.WriteHeader(http.StatusNotFound)
-      		return}
+      //Time of obtaining the file
+   		duration := time.Since(t1)
+   		fmt.Println(duration.Seconds())
+   		durString := strconv.FormatFloat(duration.Seconds(), 'f', 6, 64)
+
+   		go writeToAFile(durString)
+
+
+   		if errorGet!=nil{
+   			fmt.Println(errorGet.Error())
+   			rw.WriteHeader(http.StatusNotFound)
+   			return}
 
       		//sending the response:
       		//marshalling into a json
 
-	respJson, err4 := json.Marshal(resp)
-	if err4!=nil{
-		fmt.Print("Error occcured in marshalling")
-	}
+   			respJson, err4 := json.Marshal(resp)
+   			if err4!=nil{
+   				fmt.Print("Error occcured in marshalling")
+   			}
 
-	rw.Header().Set("Content-Type","application/json")
-	rw.WriteHeader(http.StatusOK)
-	fmt.Fprintf(rw, "%s", respJson)
-		
-}
+   			rw.Header().Set("Content-Type","application/json")
+   			rw.WriteHeader(http.StatusOK)
+   			fmt.Fprintf(rw, "%s", respJson)
 
-type imagePost struct {
-	Value string `json:"value"`
-}
+   		}
 
+   		type imagePost struct {
+   			Value string `json:"value"`
+   		}
 
+   		func main(){
 
-func postImage(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
-	fmt.Println("inside post")
-	//obj:=imagePost{}
-	bodyResp:= io.Reader(req.Body)
-      /* if err1 != nil {
-       	fmt.Println("err: readall")
-           panic(err1)
-       }*/
-	 //fmt.Println(string(bodyResp))
+   			fmt.Println("=========================")
 
-      //Decode
-      m, format, err1 := image.Decode(bodyResp)
-      if err1!=nil{
-      	panic(err1)
-      }
-   	 fmt.Println(format)
-    //var img image.Image = m
-
-    //code starts here
-    buf := new(bytes.Buffer)
-    err2 := jpeg.Encode(buf, m, nil)
-
-    fmt.Println(err2)
-    send_s3 := buf.Bytes()
-
-    fmt.Println(string(send_s3)) 
+   			//create file on set up only if doesnt exist
+   			//LOG_FILE_NAME
+   			if _, err := os.Stat(LOG_FILE_NAME); os.IsNotExist(err) {
+  // path/to/whatever does not exist
+   				fmt.Println("log file does not exist,creating the file")
+   				f, err := os.Create(LOG_FILE_NAME)
+   				if err!=nil{
+   					fmt.Printf(err.Error())
+   				}
+   				defer f.Close()
+   			}
 
 
-
-
-	 /*err := json.Unmarshal(bodyResp, &obj)
-       if err != nil {
-       		fmt.Println("err: unmarshall")
-           panic(err)
-       }*/
-
-
-//fmt.Println("obj.value",obj.Value)
-
-	 //respStruct:=Response{"123",string(bodyResp)}
-       respStruct:=Response{"77",string(send_s3)}
-	 putkey(respStruct)
-
-
-}
-
-
-
-func main(){
-
-	fmt.Println("=========================")
 
 	//Initially creating a empty ring
-	memcacheServers := []string{}
+   			memcacheServers := []string{}
 	/* memcacheServers = []string{"http://localhost:3031",
                            "http://localhost:3031",
                            "http://localhost:3031"}*/
 
-                            memcacheServers = []string{"http://54.175.28.88:3030",
-                           "http://52.91.171.117:3030",
-                           "http://54.84.66.145:3030"}
-   	ring = New(memcacheServers)
+                           memcacheServers = []string{"http://54.175.28.88:3031",
+                           "http://52.91.171.117:3031",
+                           "http://54.84.66.145:3031"}
+                           ring = New(memcacheServers)
 
    	//printing node:
-   	 fmt.Println(ring.ring[ring.sortedKeys[0]])
+                           fmt.Println(ring.ring[ring.sortedKeys[0]])
 
-	mux := httprouter.New()
+                           mux := httprouter.New()
 	//node related rest end points
-	mux.PUT("/nodes/:node_ip", addNodeReq)
-	mux.GET("/nodes", getAllNodes)
-	mux.DELETE("/nodes/:node_ip", deleteNodeReq)
-	mux.POST("/images",postImage)
+                           mux.PUT("/nodes/:node_ip", addNodeReq)
+                           mux.GET("/nodes", getAllNodes)
+                           mux.DELETE("/nodes/:node_ip", deleteNodeReq)
 
 	//key-vlaue related rest end points
-	mux.PUT("/keys", setKeyValue)
-	mux.GET("/keys/:key_id", getKeyValue)
+                           mux.PUT("/keys", setKeyValue)
+                           mux.GET("/keys/:key_id", getKeyValue)
 
-	server := http.Server{
-		Addr:        "0.0.0.0:3004",
-		Handler: mux,
-	}
+                           server := http.Server{
+                           	Addr:        "0.0.0.0:3004",
+                           	Handler: mux,
+                           }
 
-	server.ListenAndServe()
-}
-
-
+                           server.ListenAndServe()
+                       }
 
 
-func  main_old() {
-	fmt.Println("inside main")
+
+
+                       func  main_old() {
+                       	fmt.Println("inside main")
 	/*memcacheServers := []string{"http://localhost:3000",
                            "http://localhost:3001",
                            "http://localhost:3002"}*/
@@ -666,54 +590,54 @@ func  main_old() {
                            "http://localhost:3004"}
 
 
-   ring = New(memcacheServers)
+                           ring = New(memcacheServers)
 
    //ring = ring.AddNode("http://localhost:3002")
 
-   for i := range ring.nodes {
-       fmt.Println(i)
-   }
+                           for i := range ring.nodes {
+                           	fmt.Println(i)
+                           }
 
 
-   key := []Response{{Key:"1",Value:"a"},
-       {Key:"2",Value:"b"},
-       {Key:"3",Value:"c"},
-       {Key:"4",Value:"d"},
-       {Key:"5",Value:"e"},
-       {Key:"6",Value:"f"},
-       {Key:"7",Value:"g"},
-       {Key:"8",Value:"h"},
-       {Key:"9",Value:"i"},
-       {Key:"10",Value:"j"}}
+                           key := []Response{{Key:"1",Value:"a"},
+                           {Key:"2",Value:"b"},
+                           {Key:"3",Value:"c"},
+                           {Key:"4",Value:"d"},
+                           {Key:"5",Value:"e"},
+                           {Key:"6",Value:"f"},
+                           {Key:"7",Value:"g"},
+                           {Key:"8",Value:"h"},
+                           {Key:"9",Value:"i"},
+                           {Key:"10",Value:"j"}}
 
    		/*putkey(key[0])
-   		getkey(key[0].key)*/
+                           getkey(key[0].key)*/
 
-   putkey(key[0])
-   putkey(key[1])
-   putkey(key[2])
-   putkey(key[3])
-   putkey(key[4])
-   putkey(key[5])
-   putkey(key[6])
-   putkey(key[7])
-   putkey(key[8])
-   putkey(key[9])
+                           putkey(key[0])
+                           putkey(key[1])
+                           putkey(key[2])
+                           putkey(key[3])
+                           putkey(key[4])
+                           putkey(key[5])
+                           putkey(key[6])
+                           putkey(key[7])
+                           putkey(key[8])
+                           putkey(key[9])
 
 
-   var k []Response
+                           var k []Response
 
    //Printing all caches values
-   for i,_:=range key{
-       x,y,z:=getkey(key[i].Key)
-       if(z==nil){
-           if(y==true){
-               k = append(k,x)
-           }
-       }
-   }
+                           for i,_:=range key{
+                           	x,y,z:=getkey(key[i].Key)
+                           	if(z==nil){
+                           		if(y==true){
+                           			k = append(k,x)
+                           		}
+                           	}
+                           }
 
-fmt.Println("===========")
+                           fmt.Println("===========")
 
    /*//removing a node
    ring = ring.RemoveNode("http://localhost:3000")
@@ -743,6 +667,6 @@ fmt.Println("===========")
                k = append(k,x)
            }
        }
-   }*/
+       }*/
 
-}
+   }

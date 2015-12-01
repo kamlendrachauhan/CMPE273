@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        function init() {
+            $(function () {
+                //$("#first-choice").change(function () {
+                    //alert("Called");
+                    var $dropdown = $(this);
+                    $.getJSON("data.json", function (data) {
+                        var key = $dropdown.val();
+                        var vals = [];
+                        vals = data.value;
+                        var $secondChoice = $("#second-choice");
+                        $secondChoice.empty();
+                        $.each(vals, function (index, value) {
+                            $secondChoice.append("<option>" + value.url + "</option>");
+                        });
+                    });
+                });
+           // });
+        }
+    </script>
+</head>
+<body onload="init()">
+
+<!--<select id="first-choice">
+    <option selected value="base">Please Select</option>
+    <option value="value">Beverages</option>
+    <option value="snacks">Snacks</option>
+</select> -->
+<br>
+<br>
+
+<select id="second-choice">
+    <option>Please choose from above</option>
+</select>
+</body>
+</html>

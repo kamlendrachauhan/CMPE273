@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        $(function() {
+            $("#first-choice").change(function () {
+                //alert("Called");
+                var $dropdown = $(this);
+                $.getJSON("data.json", function (data) {
+                    var key = $dropdown.val();
+                    var vals = [];
+
+                    switch (key) {
+                        case 'value':
+                            vals = data.value;
+                            alert(data.value[0].url);
+                            break;
+                        case 'snacks':
+                            vals = data.snacks.split(",");
+                            break;
+                        case 'base':
+                            vals = ['Please choose from above'];
+                    }
+                    var $secondChoice = $("#second-choice");
+                    $secondChoice.empty();
+                    $.each(vals, function (index, value) {
+                        $secondChoice.append("<option>" + value.url + "</option>");
+                    });
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+
+<select id="first-choice">
+    <option selected value="base">Please Select</option>
+    <option value="value">Beverages</option>
+    <option value="snacks">Snacks</option>
+</select>
+<br>
+<br>
+
+<select id="second-choice">
+    <option>Please choose from above</option>
+</select>
+</body>
+</html>
+
+<!--
+
+<!DOCTYPE html>
+<head>
+    <meta charset='UTF-8'>
+
+    <title>Dynamic Dropdown</title>
+
+    <link rel='stylesheet' href='css/style.css'>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+
+    <script>
+        $(function() {
+            $("#json-one").change(function() {
+
+                var $dropdown = $(this);
+
+                $.getJSON("data.json", function(data) {
+                    var key = $dropdown.val();
+                    var vals = [];
+
+                    switch(key) {
+                        case 'beverages':
+                            vals = data.beverages.split(",");
+                            break;
+                        case 'snacks':
+                            vals = data.snacks.split(",");
+                            break;
+                        case 'base':
+                            vals = ['Please choose from above'];
+                    }
+
+                    var $jsontwo = $("#json-two");
+                    $jsontwo.empty();
+                    $.each(vals, function(index, value) {
+                        $jsontwo.append("<option>" + value + "</option>");
+                    });
+
+                });
+            });
+
+        });
+    </script>
+</head>
+
+<body>
+
+<div id="page-wrap">
+
+    <h1>Pulls from JSON</h1>
+
+    <select id="json-one">
+        <option selected value="base">Please Select</option>
+        <option value="beverages">Beverages</option>
+        <option value="snacks">Snacks</option>
+    </select>
+
+    <br />
+
+    <select id="json-two">
+        <option>Please choose from above</option>
+    </select>
+
+</div>
+
+</body>
+
+</html>
+
+-->

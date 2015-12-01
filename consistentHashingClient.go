@@ -135,7 +135,7 @@ func writeToAFile(text string){
 
 
     //n3, err := f.WriteString("writes\n")
-	n3, err := f.WriteString(text+"\n")
+	_, err := f.WriteString(text+"\n")
 	if err!=nil{
 		fmt.Printf(err.Error())
 	}
@@ -325,7 +325,50 @@ func putkey(x Response)error{
    }
 
 
-   func getkey(x string)(Response,bool,error){
+   func getkey(x string)(Response,bool,error,string){
+   	fmt.Println("inside getkey")
+   	var url string
+   	server1,z := ring.GetNode(x)
+   	if(z==true){
+   		url =server1+"/"+"keyvals"+"/"+x
+   	}
+   	fmt.Println(url)
+   	resp, err := http.Get(url)
+   	if err != nil || resp.StatusCode >= 400 {
+   		return Response{}, false, err,""
+   	}
+
+   //fmt.Println("Response:",resp)
+
+   	defer resp.Body.Close()
+
+   	//Getting header info:
+   	header:=resp.Header
+   	fmt.Println(resp.Header)
+   	systemType:=header.Get("System-Type")
+   	fmt.Println("System-type:",systemType)
+   	// trying Content-Type 
+   	contentType:=header.Get("Content-Type")
+   	fmt.Println("Content-type:",contentType)
+
+   	body, err := ioutil.ReadAll(resp.Body)
+   	if err != nil {
+       return Response{}, false, err,""
+   	}
+   //fmt.Println(string(body))
+
+
+   //For now a string is being sent
+   	valueString:=string(body)
+
+   //fmt.Println("value:",u.Value)
+   //fmt.Println("value:",valueString)
+   	u:=Response{x,valueString}
+   	return u, true, nil,contentType
+   }
+
+
+   func getkey_original(x string)(Response,bool,error){
    	fmt.Println("inside getkey")
    	var url string
    	server1,z := ring.GetNode(x)
@@ -342,6 +385,15 @@ func putkey(x Response)error{
 
    	defer resp.Body.Close()
 
+   	//Getting header info:
+   	header:=resp.Header
+   	fmt.Println(resp.Header)
+   	systemType:=header.Get("System-Type")
+   	fmt.Println("System-type:",systemType)
+   	// trying Content-Type 
+   	contentType:=header.Get("Content-Type")
+   	fmt.Println("Content-type:",contentType)
+
    	body, err := ioutil.ReadAll(resp.Body)
    	if err != nil {
        //return Response{}, false, err
@@ -357,6 +409,8 @@ func putkey(x Response)error{
    	u:=Response{x,valueString}
    	return u, true, nil
    }
+
+
 
    type Response struct{
    	Key string `json:"key"`
@@ -489,14 +543,14 @@ func putkey(x Response)error{
 
       //calling the put key
       //resp,_,errorGet:=getkey(jsonInp.Key)
-   		resp,_,errorGet:=getkey(keyString)
+   		resp,_,errorGet,statusStr:=getkey(keyString)
 
       //Time of obtaining the file
    		duration := time.Since(t1)
    		fmt.Println(duration.Seconds())
    		durString := strconv.FormatFloat(duration.Seconds(), 'f', 6, 64)
 
-   		go writeToAFile(durString)
+   		go writeToAFile(durString+","+statusStr)
 
 
    		if errorGet!=nil{
@@ -629,7 +683,7 @@ func putkey(x Response)error{
 
    //Printing all caches values
                            for i,_:=range key{
-                           	x,y,z:=getkey(key[i].Key)
+                           	x,y,z,_:=getkey(key[i].Key)
                            	if(z==nil){
                            		if(y==true){
                            			k = append(k,x)

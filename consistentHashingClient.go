@@ -14,7 +14,7 @@ import (
 "time"
 "os"
 "strconv"
-
+"strings"
 "github.com/rs/cors"
 )
 
@@ -291,8 +291,6 @@ func putkey(x Response)error{
 		m[x.Key]=x.Value
 
 		jsonString,_:=json.Marshal(m)
-   //fmt.Println("inside Put: marshalling")
-   //fmt.Println(string(jsonString))
 
 		req1, errReqC := http.NewRequest("POST", url, bytes.NewBuffer(jsonString))
 		if errReqC!=nil{
@@ -305,7 +303,7 @@ func putkey(x Response)error{
 		client := &http.Client{}
 		resp, errClient := client.Do(req1)
 		if errClient != nil {
-			fmt.Println(resp)
+			//fmt.Println(resp)
 			fmt.Println(errClient.Error())
 			errMsg:="Request creation error.Check server side."
 			fmt.Println(errMsg)
@@ -314,7 +312,7 @@ func putkey(x Response)error{
 		}
 		defer resp.Body.Close()
 
-		fmt.Println("The response is: ")
+		
         //fmt.Println(resp)
 
 
@@ -328,7 +326,7 @@ func putkey(x Response)error{
 
 
    func getkey(x string)(Response,bool,error,string){
-   	fmt.Println("inside getkey")
+   	
    	var url string
    	server1,z := ring.GetNode(x)
    	if(z==true){
@@ -346,12 +344,16 @@ func putkey(x Response)error{
 
    	//Getting header info:
    	header:=resp.Header
-   	fmt.Println(resp.Header)
+   	//fmt.Println(resp.Header)
    	systemType:=header.Get("System-Type")
    	fmt.Println("System-type:",systemType)
+
+      if !strings.EqualFold(systemType,"Cache"){
+         systemType="MainDB"
+      }
+
    	// trying Content-Type 
-   	contentType:=header.Get("Content-Type")
-   	fmt.Println("Content-type:",contentType)
+   	//contentType:=header.Get("Content-Type")
 
    	body, err := ioutil.ReadAll(resp.Body)
    	if err != nil {
@@ -366,7 +368,7 @@ func putkey(x Response)error{
    //fmt.Println("value:",u.Value)
    //fmt.Println("value:",valueString)
    	u:=Response{x,valueString}
-   	return u, true, nil,contentType
+   	return u, true, nil,systemType
    }
 
 
@@ -453,7 +455,7 @@ fmt.Println("inside add node")
             }
 
 
-   	fmt.Println("inside add node")
+   	//fmt.Println("inside add node")
 	//The input will be a string - node link
    //	nodeString:=p.ByName("node_ip")
          nodeString:=newNode.Url
@@ -480,7 +482,7 @@ fmt.Println("inside add node")
    	len1 := len(nodesList)
    	for i:=0;i<len1;i++{
    		temp:=NodeUrl{nodesList[i]}
-   		fmt.Println(temp)
+   		//fmt.Println(temp)
    		urls=append(urls,temp)
    	}
 
@@ -524,7 +526,7 @@ fmt.Println("inside add node")
    func setKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
 	//The input will be a json (ince if wwe pass http etc. will be an error)
-      fmt.Println("inside setkey")
+    //  fmt.Println("inside setkey")
 
    	jsonInp:=Response{}
 
@@ -559,18 +561,19 @@ fmt.Println("inside add node")
    		//fmt.Println(t1)
 
    		keyString:=p.ByName("key_id")
-   		fmt.Println("Key given:",keyString)
+   		
+         //fmt.Println("Key given:",keyString)
 
       //calling the put key
-      //resp,_,errorGet:=getkey(jsonInp.Key)
    		resp,_,errorGet,statusStr:=getkey(keyString)
 
       //Time of obtaining the file
    		duration := time.Since(t1)
-   		fmt.Println(duration.Seconds())
-   		durString := strconv.FormatFloat(duration.Seconds(), 'f', 6, 64)
+   		//fmt.Println(duration.Seconds())
+   		//durString := strconv.FormatFloat(duration.Seconds(), 'f', 6, 64)
+         durString := strconv.FormatFloat(duration.Seconds()*1000, 'f', 6, 64)
 
-   		go writeToAFile(durString+","+statusStr)
+   		//go writeToAFile(durString+","+statusStr)
 
 
    		if errorGet!=nil{
@@ -586,9 +589,12 @@ fmt.Println("inside add node")
    				fmt.Print("Error occcured in marshalling")
    			}
 
+            //Final Println:
+            fmt.Println("Key given:",keyString, "Duration:", durString,"msecs", "Server Type:", statusStr)
    			rw.Header().Set("Content-Type","application/json")
    			rw.WriteHeader(http.StatusOK)
             //fmt.Println("Response:"+string(respJson)) 
+
    			fmt.Fprintf(rw, "%s", respJson)
 
    		}
@@ -625,10 +631,7 @@ fmt.Println("inside add node")
                            "http://52.91.171.117:3031",
                            "http://54.84.66.145:3031"}
                            ring = New(memcacheServers)
-
-   	//printing node:
-                           fmt.Println(ring.ring[ring.sortedKeys[0]])
-
+                          
                            mux := httprouter.New()
 	//node related rest end points
                            mux.POST("/nodes", addNodeReq)

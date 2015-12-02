@@ -49,6 +49,8 @@ func main() {
 }
 
 func getAllDBData(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+
+    rw.Header().Set("Access-Control-Allow-Origin", "*")
     fmt.Println("inside Get", client_get_all_nodes_url)
     var node_info[] NodeData
 

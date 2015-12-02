@@ -14,6 +14,8 @@ import (
 "time"
 "os"
 "strconv"
+
+"github.com/rs/cors"
 )
 
 type HashKey uint32
@@ -437,10 +439,24 @@ func putkey(x Response)error{
 
 //Add an node into the system
    func addNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+fmt.Println("inside add node")
+      //Json stuff
+         var errDecode error
+            newNode:=NodeUrl{}
+
+    //decode the sent json
+            errDecode=json.NewDecoder(req.Body).Decode(&newNode)
+            if errDecode!=nil{
+                fmt.Println(errDecode.Error())
+                msg:="Json sent was Empty/Incorrect .Error: "
+                fmt.Println(msg)
+            }
+
 
    	fmt.Println("inside add node")
 	//The input will be a string - node link
-   	nodeString:=p.ByName("node_ip")
+   //	nodeString:=p.ByName("node_ip")
+         nodeString:=newNode.Url
    	fmt.Println("the obtained node ip address: ", nodeString)
    	httpnode:="http://"+ nodeString
 
@@ -452,6 +468,9 @@ func putkey(x Response)error{
 
 //Get all the nodes --->Not working
    func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+
+
+      rw.Header().Set("Content-Type", "application/json")
 
 	//The input will be a string - node link
    	var urls []NodeUrl
@@ -505,6 +524,7 @@ func putkey(x Response)error{
    func setKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
 	//The input will be a json (ince if wwe pass http etc. will be an error)
+      fmt.Println("inside setkey")
 
    	jsonInp:=Response{}
 
@@ -568,6 +588,7 @@ func putkey(x Response)error{
 
    			rw.Header().Set("Content-Type","application/json")
    			rw.WriteHeader(http.StatusOK)
+            //fmt.Println("Response:"+string(respJson)) 
    			fmt.Fprintf(rw, "%s", respJson)
 
    		}
@@ -610,20 +631,23 @@ func putkey(x Response)error{
 
                            mux := httprouter.New()
 	//node related rest end points
-                           mux.PUT("/nodes/:node_ip", addNodeReq)
+                           mux.POST("/nodes", addNodeReq)
                            mux.GET("/nodes", getAllNodes)
                            mux.DELETE("/nodes/:node_ip", deleteNodeReq)
 
 	//key-vlaue related rest end points
-                           mux.PUT("/keys", setKeyValue)
+                           mux.POST("/keys", setKeyValue)
                            mux.GET("/keys/:key_id", getKeyValue)
 
-                           server := http.Server{
+                          /* server := http.Server{
                            	Addr:        "0.0.0.0:3004",
                            	Handler: mux,
                            }
-
                            server.ListenAndServe()
+*/
+                           handler := cors.Default().Handler(mux)
+                           http.ListenAndServe(":3004", handler)
+                           
                        }
 
 

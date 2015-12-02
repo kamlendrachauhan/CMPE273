@@ -34,11 +34,11 @@ type NodeUrl struct
 }
 
 func main() {
-
+	fmt.Println("Client Get All Node Info starting at 3005")
     mux := httprouter.New()
     mux.GET("/getAllNodeInfo", getAllDBData)
     server := http.Server{
-        Addr:        "0.0.0.0:8880",
+        Addr:        "0.0.0.0:3005",
         Handler: mux,
     }
     server.ListenAndServe()

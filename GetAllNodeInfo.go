@@ -15,6 +15,10 @@ const (
     client_get_all_nodes_url = client_host_url + "/nodes"
     main_db_redis_ip_port = "52.91.39.197:6379"
 )
+type NodeValues struct {
+    Node_Data []NodeData `json:"nodevalues"`
+}
+
 type NodeData struct {
     NodeNumber string `json:"node_number"`
     NodeType string `json:"node_type"`
@@ -34,7 +38,7 @@ type NodeUrl struct
 }
 
 func main() {
-	fmt.Println("Client Get All Node Info starting at 3005")
+
     mux := httprouter.New()
     mux.GET("/getAllNodeInfo", getAllDBData)
     server := http.Server{
@@ -68,8 +72,9 @@ func getAllDBData(rw http.ResponseWriter, req *http.Request, p httprouter.Params
     }
     nodeInfo := getInfoFromCacheAndMDB(main_db_redis_ip_port, allNodes,mainNodeNum,"Main Database")
     node_info = append(node_info, nodeInfo)
-    uj, _ := json.Marshal(node_info)
+    responseObj := NodeValues{node_info}
 
+    uj, _ := json.Marshal(responseObj)
     // Write content-type, statuscode, payload
     rw.Header().Set("Content-Type", "application/json")
     rw.WriteHeader(200)
@@ -89,10 +94,10 @@ func getInfoFromCacheAndMDB(dbUrl string, allNodes AllNodes, count int, dbtype s
         Password: "", // no password set
         DB:       0, // use default DB
     })
-    _, err1 := client.Ping().Result()
+   /* _, err1 := client.Ping().Result()
     if err1 != nil {
         panic(err1)
-    }
+    }*/
     clientInfo := client.Info().String()
     //clientInfo := client.Info().String()
     splitted := strings.Split(clientInfo, "\n")

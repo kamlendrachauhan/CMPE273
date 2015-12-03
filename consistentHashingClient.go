@@ -328,7 +328,7 @@ func putkey(x Response)error{
    	if(z==true){
    		url =server1+"/"+"keyvals"+"/"+x
    	}
-   	fmt.Println(url)
+   	fmt.Println("Sharded to:",url)
    	resp, err := http.Get(url)
    	if err != nil || resp.StatusCode >= 400 {
    		return Response{}, false, err,""
@@ -342,7 +342,6 @@ func putkey(x Response)error{
    	header:=resp.Header
    	//fmt.Println(resp.Header)
    	systemType:=header.Get("System-Type")
-   	fmt.Println("System-type:",systemType)
 
       if !strings.EqualFold(systemType,"Cache"){
          systemType="MainDB"
@@ -415,6 +414,7 @@ func putkey(x Response)error{
 
 func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
+   rw.Header().Set("Access-Control-Allow-Origin", "*")man
    rw.Header().Set("Content-Type", "application/json")
 
 	//The input will be a string - node link
@@ -469,14 +469,13 @@ func deleteNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Param
 func setKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
   jsonInp:=Response{}
 
+
     //decode the sent json
   errDecode:=json.NewDecoder(req.Body).Decode(&jsonInp)
   if errDecode!=nil{
     fmt.Println(errDecode.Error())
     rw.WriteHeader(http.StatusBadRequest)
  }
-
-
       //calling the put key
  errorPut:=putkey(jsonInp)
 
@@ -492,8 +491,9 @@ func setKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params)
 
 ///get a key value pair
 func getKeyValue(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
-
             //Time of req
+rw.Header().Set("Access-Control-Allow-Origin", "*")
+
  t1:=time.Now()
    		//fmt.Println(t1)
  keyString:=p.ByName("key_id")

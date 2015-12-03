@@ -414,7 +414,7 @@ func putkey(x Response)error{
 
 func getAllNodes(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
 
-   rw.Header().Set("Access-Control-Allow-Origin", "*")man
+   rw.Header().Set("Access-Control-Allow-Origin", "*")
    rw.Header().Set("Content-Type", "application/json")
 
 	//The input will be a string - node link

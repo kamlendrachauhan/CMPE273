@@ -460,7 +460,7 @@ func deleteNodeReq(rw http.ResponseWriter, req *http.Request, p httprouter.Param
     fmt.Println(i)
  }
 
- rw.WriteHeader(http.StatusCreated)
+ rw.WriteHeader(http.StatusNoContent)
 }
 
 
@@ -561,7 +561,7 @@ func main(){
 	//node related rest end points
  mux.POST("/nodes", addNodeReq)
  mux.GET("/nodes", getAllNodes)
- mux.DELETE("/nodes/:node_ip", deleteNodeReq)
+ mux.POST("/nodes/:node_ip", deleteNodeReq)
 
 	//key-vlaue related rest end points
  mux.POST("/keys", setKeyValue)

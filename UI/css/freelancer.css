@@ -39,7 +39,22 @@
     left: 20px;
     width: 500px;
 }
+.table, th, td  {
+    border: 1px solid #dddddd;
+}
+table, td, th {
+    border: 1px solid green;
+}
 
+th {
+    background-color: lightslategray;
+    color: white;
+}
+td {
+    padding: 15px;
+}
+
+.table.table-bordered th {border:0;}
 
 body {
     overflow-x: hidden;

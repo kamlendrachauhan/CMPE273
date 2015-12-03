@@ -38,7 +38,7 @@
 
                 }
             }
-            xmlhttp.open("GET", "http://54.164.93.210:3004/nodes", true);
+            xmlhttp.open("GET", "http://localhost:3004/nodes", true);
             xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             //xmlhttp.setRequestHeader("Content-length", params.length);
             //xmlhttp.setRequestHeader("Connection", "close");
@@ -76,23 +76,37 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (xhttp.readyState == 4 && xhttp.status == 201) {
-                    alert("Node addded succesfully");
                 }
             };
-            xhttp.open("POST", "http://54.164.93.210:3004/nodes", true);
+            xhttp.open("POST", "http://localhost:3004/nodes", true);
             xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             xhttp.send(JSON.stringify({url:str1}));
+        }
+    </script>
+    <script>
+        function deleteNodeFn(str1) {
+           // alert(str1);
+            parsed=str1.substring(7);
+           // alert(parsed)
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (xhttp.readyState == 4 && xhttp.status == 204) {
+                }
+            };
+            xhttp.open("POST", "http://localhost:3004/nodes/"+ parsed, false);
+            xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhttp.send(null);
         }
     </script>
     <script>
         function getKey(str1) {
             var response = " ";
             var xhttp = new XMLHttpRequest();
-                xhttp.open("GET", "http://54.164.93.210:3004/keys/" + str1, false);
+                xhttp.open("GET", "http://localhost:3004/keys/" + str1, false);
                 xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
                 xhttp.send(null);
                 response = JSON.parse(xhttp.responseText);
-                alert(response.value);
+                //alert(response.value);
             document.getElementById("displayText").innerHTML = response.value;
         }
     </script>
@@ -101,19 +115,21 @@
         function putKey(filename,data) {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
-                if (xhttp.readyState == 4 && xhttp.status == 200) {
+                if (xhttp.readyState == 4 && xhttp.status == 201) {
                     alert("Your file was successfully inserted!")
                 }
 
             };
 
             filename1=filename+".txt"
-            xhttp.open("POST", "http://54.164.93.210:3004/keys", true);
+            xhttp.open("POST", "http://localhost:3004/keys", true);
             xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             //alert(JSON.stringify({key:filename1,value:data}));
             xhttp.send(JSON.stringify({key:filename1,value:data}));
         }
     </script>
+
+
     <script>
         var nodeResponse2;
         function tableInfoCaller(){
@@ -190,9 +206,9 @@
                 <li class="page-scroll">
                     <a href="#cacheDetails">Cache Details</a>
                 </li>
-                <li class="page-scroll">
+                <!--<li class="page-scroll">
                     <a href="#about">About</a>
-                </li>
+                </li>-->
 
             </ul>
         </div>
@@ -220,7 +236,7 @@
                 <button type="submit" class="btn btn-success btn-group-sm" onclick="addNodeFn(addNode.value)">Submit</button>
             </div>
         </form>
-        <form role="form" action="#" method="post">
+        <form role="form">
             <div class="form-group">
                 <label for="removeNode">Remove Node:</label>
                 <div>
@@ -229,11 +245,11 @@
                     </select>
                 </div>
                 <br>
-                <button type="submit" class="btn btn-success btn-group-sm">Submit</button>
+                <button type="submit" class="btn btn-success btn-group-sm" onclick="deleteNodeFn(removeNode.value)">Submit</button>
             </div>
         </form>
 
-        <form role="form" action="#" method="post">
+        <!--<form role="form" action="#" method="post">
             <div class="form-group">
                 <label for="cacheNodeInfo">Cache Node Info:</label>
                 <div>
@@ -244,7 +260,7 @@
                 <br>
                 <button type="submit" class="btn btn-success btn-group-sm">Submit</button>
             </div>
-        </form>
+        </form> -->
     </div>
 </section>
 
@@ -253,7 +269,7 @@
         <div class="row">
             <div class="col-lg-12 text-center">
                 <br>
-                <h2>File Upload Download section</h2>
+                <h2>File Sharding</h2>
                 <hr class="star-primary">
             </div>
         </div>
@@ -278,6 +294,7 @@
                     <div class="form-group">
                         <label for="fileName">File Name</label>
                         <input type="text" class="form-control" style="width:50%" id="fileName">
+                        <br>
                         <button type="submit" class="btn btn-success btn-group-sm" onClick="putKey(fileName.value,userText.value)">Submit</button>
                     </div>
                 </div>
@@ -293,6 +310,13 @@
 </section>
 
 <section>
+    <div class="container"  align="center">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <h2>Cache details</h2>
+                <hr class="star-primary">
+            </div>
+        </div>
     <div>
     <table id="nodeTable" class="table table-hover table-bordered">
         <thead>
@@ -327,47 +351,48 @@
 </section>
 
 <!-- Portfolio Grid Section -->
-<section id="cacheDetails">
-    <div class="container"  align="center">
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <h2>Cache details</h2>
-                <hr class="star-primary">
-            </div>
-        </div>
-        <div class="row"  align="right" >
-            <br>
-            <br>
-            <div class="col-sm-4 portfolio-item">
-                <a href="#portfolioModal1" class="portfolio-link" data-toggle="modal">
-                    <div class="caption">
-                        <div class="caption-content">
-                            <i class="fa fa-search-plus fa-3x"></i>
-                        </div>
-                    </div>
-                    <p>
-                        Cache Size
-                    </p>
-                </a>
-            </div>
-            <div class="col-sm-4 portfolio-item">
-                <a href="#portfolioModal2" class="portfolio-link" data-toggle="modal">
-                    <div class="caption">
-                        <div class="caption-content">
-                            <i class="fa fa-search-plus fa-3x"></i>
-                        </div>
-                    </div>
-                    <p>
-                        Cache count
-                    </p>
-                </a>
-            </div>
+<!--<section id="cacheDetails">-->
+    <!--<div class="container"  align="center">-->
+        <!--<div class="row">-->
+            <!--<div class="col-lg-12 text-center">-->
+                <!--<h2>Cache details</h2>-->
+                <!--<hr class="star-primary">-->
+            <!--</div>-->
+        <!--</div>-->
+        <!--<div class="row"  align="right" >-->
+            <!--<br>-->
+            <!--<br>-->
+            <!--<div class="col-sm-4 portfolio-item">-->
+                <!--<a href="#portfolioModal1" class="portfolio-link" data-toggle="modal">-->
+                    <!--<div class="caption">-->
+                        <!--<div class="caption-content">-->
+                            <!--<i class="fa fa-search-plus fa-3x"></i>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                    <!--<p>-->
+                        <!--Cache Size-->
+                    <!--</p>-->
+                <!--</a>-->
+            <!--</div>-->
+            <!--<div class="col-sm-4 portfolio-item">-->
+                <!--<a href="#portfolioModal2" class="portfolio-link" data-toggle="modal">-->
+                    <!--<div class="caption">-->
+                        <!--<div class="caption-content">-->
+                            <!--<i class="fa fa-search-plus fa-3x"></i>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                    <!--<p>-->
+                        <!--Cache count-->
+                    <!--</p>-->
+                <!--</a>-->
+            <!--</div>-->
 
-        </div>
-    </div>
-</section>
+        <!--</div>-->
+    <!--</div>-->
+<!--</section>-->
 
 <!-- About Section -->
+<!--
 <section class="success" id="about">
     <div class="container">
         <div class="row">
@@ -390,9 +415,11 @@
             </div>
         </div>
     </div>
-</section>
+</section>-->
+
 
 <!-- Footer -->
+<!--
 <footer class="text-center">
     <div class="footer-above">
         <div class="container">
@@ -438,7 +465,7 @@
         </div>
     </div>
 </footer>
-
+-->
 <!-- Scroll to Top Button (Only visible on small and extra-small screen sizes) -->
 <div class="scroll-top page-scroll visible-xs visible-sm">
     <a class="btn btn-primary" href="#page-top">
